@@ -1,0 +1,14 @@
+Reference
+======================
+
+Factors Considered in Wine Evaluation 
+http://www.bjcp.org/mead/Factors_Wine_Eval.pdf
+
+Quick-R: Tree-Based Models
+http://www.statmethods.net/advstats/cart.html
+
+Predicting wine quality - FastML
+http://fastml.com/predicting-wine-quality/
+
+Data Analysis with R Creating Effective Plots
+https://docs.google.com/document/d/1-f3wM3mJSkoWxDmPjsyRnWvNgM57YUPloucOIl07l4c/pub
