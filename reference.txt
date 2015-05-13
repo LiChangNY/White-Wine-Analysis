@@ -12,3 +12,9 @@ http://fastml.com/predicting-wine-quality/
 
 Data Analysis with R Creating Effective Plots
 https://docs.google.com/document/d/1-f3wM3mJSkoWxDmPjsyRnWvNgM57YUPloucOIl07l4c/pub
+
+Feature Selection with the Caret R Package
+http://machinelearningmastery.com/feature-selection-with-the-caret-r-package/
+
+Recursive Feature Elimination
+http://topepo.github.io/caret/rfe.html
