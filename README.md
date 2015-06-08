@@ -1,6 +1,4 @@
-# White-Wine-Analysis
-Data Analysis with R
-
+# An Exploratory Analysis for White Wine Quality and Physicochemical Properties
 
 * [Project.Rmd](https://github.com/LiChangNY/White-Wine-Analysis/blob/master/project.Rmd): The RMD file containing the analysis (final plots and summary, and reflection)
 
