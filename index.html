@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-dark.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>White Wine Analysis with R by LiChangNY</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <header>
+          <h1>White Wine Analysis with R</h1>
+          <h2>Used R for exploring and visualizing how physicochemical features affect the taste preference of white wine.</h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/LiChangNY/White-Wine-Analysis/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/LiChangNY/White-Wine-Analysis/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/LiChangNY/White-Wine-Analysis" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>
+<a id="exploring-white-wine-dataset-with-r" class="anchor" href="#exploring-white-wine-dataset-with-r" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Exploring White Wine Dataset with R</h1>
+
+<ul>
+<li>
+<a href="https://github.com/LiChangNY/White-Wine-Analysis/blob/master/project.Rmd">Project.Rmd</a>: The RMD file containing the analysis (final plots and summary, and reflection)</li>
+<li>
+<a href="https://github.com/LiChangNY/White-Wine-Analysis/blob/master/project.html">Project.html</a>: The HTML file knitted from the RMD file using the knitr package</li>
+<li>
+<a href="https://github.com/LiChangNY/White-Wine-Analysis/blob/master/reference.txt">Reference</a>: A list of Web sites, books, forums, blog posts, github repositories, etc.</li>
+</ul>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-c"># Load all of the packages</span>
+suppressMessages(library(<span class="pl-smi">ggplot2</span>))
+suppressMessages(library(<span class="pl-smi">gridExtra</span>))
+suppressMessages(library(<span class="pl-smi">GGally</span>))
+suppressMessages(library(<span class="pl-smi">reshape2</span>))
+suppressMessages(library(<span class="pl-smi">RColorBrewer</span>))
+suppressMessages(library(<span class="pl-smi">corrplot</span>))
+suppressMessages(library(<span class="pl-smi">Hmisc</span>))
+suppressMessages(library(<span class="pl-smi">MASS</span>))
+suppressMessages(library(<span class="pl-smi">randomForest</span>))
+suppressMessages(library(<span class="pl-smi">caret</span>))
+suppressMessages(library(<span class="pl-smi">psych</span>))</pre></div>
+
+<p>As the final project for the Udacity Data Analysis with R, I decided to educate myself about the white wine. I downloaded dataset from <a href="https://docs.google.com/document/d/1qEcwltBMlRYZT-l699-71TzInWfk4W9q5rTCSvDVMpc/pub">here</a> and loaded it in R. The research question is what physicochemical properties will affect the taste preference. </p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-c"># Load the Data</span>
+<span class="pl-smi">wine</span> <span class="pl-k">&lt;-</span> read.csv(<span class="pl-s"><span class="pl-pds">'</span>wineQualityWhites.csv<span class="pl-pds">'</span></span>)</pre></div>
+
+<h1>
+<a id="i---univariate-plots-section" class="anchor" href="#i---univariate-plots-section" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>I - Univariate Plots Section</h1>
+
+<p>Below I examined each variable in the dataset. I started with a basic plot and then revised the plot to be more clear and user-frienly. It helped me understand the distribution of each variable and decide if I need to tidy up something.</p>
+
+<div class="highlight highlight-source-r"><pre>str(<span class="pl-smi">wine</span>)
+summary(<span class="pl-smi">wine</span>)</pre></div>
+
+<h3>
+<a id="quality" class="anchor" href="#quality" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>quality</h3>
+
+<p>In our dataset, the "quality" variable ranges between 3 and 9 with a median of 6, so there is neither very bad nor very excellent wine but mostly averge wines. Also, there are only 25 wines rated either 3 or 9. From bivariate section, I excluded these 25 cases from the analysis. Though quality is an integer, it makes more sense to be converted to an ordinal variable so I can compare the physicochemicals across different wine qualities. </p>
+
+<div class="highlight highlight-source-r"><pre>table(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality</span>)
+<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality.cat</span> <span class="pl-k">&lt;-</span> <span class="pl-k">factor</span>(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality</span>)
+ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">quality.cat</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram()</pre></div>
+
+<h3>
+<a id="fixed-acidity" class="anchor" href="#fixed-acidity" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>fixed acidity</h3>
+
+<p>The basic histogram shows that fixed acidity has really few values less than 3 and a long tail after 10. So I limit the x axis range. Changing binwidth also shows more clearly that the majority of the fixed acidities fall between 5.5 and 8.5.</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">fixed.acidity</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">fixed.acidity</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.05</span>) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">3</span>,<span class="pl-c1">10</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">3</span>, <span class="pl-c1">10</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>) )
+
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="volatile-acidity" class="anchor" href="#volatile-acidity" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>volatile acidity</h3>
+
+<p>After adjusting bin width, I can see that most wines have an acetic acid between 0.15-0.4g/l, with a median value at 0.28g/l. I know that a high level of acetic acid will cause an unpleasant vigenar taste and therefore poor sensory rating. I can test it in the next section. </p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">volatile.acidity</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">volatile.acidity</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.005</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span><span class="pl-k">=</span> c(<span class="pl-c1">0.1</span>, <span class="pl-c1">0.6</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">0.1</span>, <span class="pl-c1">0.55</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">0.05</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="citric-acid" class="anchor" href="#citric-acid" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>citric acid</h3>
+
+<p>The majority of citric acidity level fall between 0.15-0.5g/l with a spike at the level of 0.49g/l. In contrast to volatile acidity, citric acidity add freshness to the wine.</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">citric.acid</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">citric.acid</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.005</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">0.8</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">0</span>, <span class="pl-c1">0.8</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">0.05</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="residual-sugar" class="anchor" href="#residual-sugar" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>residual sugar</h3>
+
+<p>Residual sugar has a wide range between 0.6-65.8g/l while the median is only 5.2g/l. This is because wine producers try to cater to varying consumers' preference of sweetness. Some people like me favor sweet wines, while others might prefer bone dry. </p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">residual.sugar</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">residual.sugar</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.1</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">20</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">0</span>, <span class="pl-c1">20</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="chlorides" class="anchor" href="#chlorides" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>chlorides</h3>
+
+<p>Most wines has an amount of sodium chloride between 0.025-0.06g/l, with a median of 0.043g/l. The highest level in this dataset is 0.346g/l.</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">chlorides</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">chlorides</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.001</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">0.1</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">0</span>, <span class="pl-c1">0.1</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">0.01</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="free-sulfur-dioxide" class="anchor" href="#free-sulfur-dioxide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>free sulfur dioxide</h3>
+
+<p>The median value of free sulfur dioxide is 34 mg/l and it has a wide range from 2 to 289 mg/l with the majority of the value falling between 10-55 mg/l. Since free sulfur dioxide becomes noticeable at 50 mg/l, I assume it will affect the taste. </p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">80</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">0</span>, <span class="pl-c1">100</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">5</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)
+
+<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide.cat</span> <span class="pl-k">&lt;-</span> ifelse(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&lt;</span><span class="pl-k">=</span> <span class="pl-c1">50</span>, <span class="pl-s"><span class="pl-pds">'</span>&lt;= 50mg/l, not noticeable<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>&gt; 50mg/l, noticeable<span class="pl-pds">'</span></span>)
+<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide.cat</span> <span class="pl-k">&lt;-</span> <span class="pl-k">factor</span>(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide.cat</span>)</pre></div>
+
+<h3>
+<a id="total-sulfur-dioxide" class="anchor" href="#total-sulfur-dioxide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>total sulfur dioxide</h3>
+
+<p>Similar to free sulfur dioxide, total sulfur dioxide also has a wide range from 9 to 440 mg/l with a median value at 134 mg/l.</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">total.sulfur.dioxide</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">total.sulfur.dioxide</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">10</span>, <span class="pl-c1">250</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">10</span>, <span class="pl-c1">250</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="density" class="anchor" href="#density" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>density</h3>
+
+<p>Density has a small range between 0.99 to 1.04g/cc. It mostly depends on the percent of alcohol and sugar in the wine.</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">density</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">density</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.00005</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">0.99</span>, <span class="pl-c1">1</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">0.99</span>, <span class="pl-c1">1</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">0.001</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="ph" class="anchor" href="#ph" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>PH</h3>
+
+<p>PH has a small range between 2.7 to 3.8 but obviously highly acetic!</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">pH</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">pH</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.005</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">2.9</span>, <span class="pl-c1">3.5</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">3</span>, <span class="pl-c1">3.5</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">0.05</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h3>
+<a id="alcohol" class="anchor" href="#alcohol" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>alcohol</h3>
+
+<p>An appropriate level of alcohol enhances the flavor but a high level of alcohol will cause a negative burning sensation. But our white wine dataset doesn't appear to have very high alcohol level. The median is 10.4% and the majority of values fall between 9% to 13%. </p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">basic</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">alcohol</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram() <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Basic plot<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">revised</span> <span class="pl-k">&lt;-</span> ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">alcohol</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_histogram(<span class="pl-v">binwidth</span> <span class="pl-k">=</span> <span class="pl-c1">0.05</span>) <span class="pl-k">+</span> 
+  scale_x_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">8.5</span>, <span class="pl-c1">13</span>), <span class="pl-v">breaks</span> <span class="pl-k">=</span> seq(<span class="pl-c1">8.5</span>, <span class="pl-c1">13</span>, <span class="pl-v">by</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>) ) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Revised plot<span class="pl-pds">'</span></span>)
+grid.arrange(<span class="pl-smi">basic</span>, <span class="pl-smi">revised</span>)</pre></div>
+
+<h2>
+<a id="univariate-analysis" class="anchor" href="#univariate-analysis" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Univariate Analysis</h2>
+
+<p>The dataset has a total of 4898 observations and 12 variables plus one indicating the wine ID ('X'). Almost all variables except wine quality are numeric. </p>
+
+<ol>
+<li><p>Majority of white wine in this dataset is rated between 4-8 on a scale of 10 with a median of 6. We don't have very bad or very excellent wines. Quality is the main feature I am interested in. I wonder what physicochemical elements will influence the taste preference. However, there are only 20 wines rated 3 and 5 wines rated 9. I think it's better to drop these few cases before the bivariate and multi-variate analysis just so that we can focus more on the bulk of the data. Other than that, the dataset is relatively clean.</p></li>
+<li><p>Residual sugar appear to have a wide range between 0.6-65.8g/l, supposedly to accomdate customers' varying palettes for sweetness.  </p></li>
+<li><p>Free sulfur dioxide ranges between 2 to 289mg/l but be aware that the smell becomes noticeable at the level above 50 mg/l. </p></li>
+<li><p>White wine is highly acetic with pH level ranging from 2.7 to 3.8.</p></li>
+<li><p>Below I used recursive feature elmination(RFE) to explore what the important features are. RFE repeats the process of choosing the best peforming feature(s) and refit the model with the remaining features to determine the importance of each feature. It is more often used in model building process but I think it would be valuable to display the importance of each feature. Here is a <a href="http://topepo.github.io/caret/rfe.html">good tutorial</a>. The model I used for the feature selection is <a href="http://www.listendata.com/2014/11/random-forest-with-r.html">random forest</a>, a method aiming to overcome the overfitting problem of <a href="http://en.wikipedia.org/wiki/Decision_tree_learning">decision trees</a>. The graph below shows that the R-squared value keeps rising with more variables added but degree of increase slows down after three factors: volatile acidity, alcohol, and free sulfur dioxide. Alcohol is no doubt a very important feature as no one would prefer bland wines. Both volatile acidity and free sulfur dioxide have such "volatile" properties that an exessive amount will cause unpleasant smell or taste. So I decided to use volatile acidity, alcohol and free sulfur dioxide as the main features of my interest for further investigation.</p></li>
+</ol>
+
+<div class="highlight highlight-source-r"><pre>set.seed(<span class="pl-c1">1</span>)
+<span class="pl-c"># define the control using a random forest selection function</span>
+<span class="pl-smi">control</span> <span class="pl-k">&lt;-</span> rfeControl(<span class="pl-v">functions</span><span class="pl-k">=</span><span class="pl-smi">rfFuncs</span>, <span class="pl-v">method</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>cv<span class="pl-pds">"</span></span>, <span class="pl-v">number</span><span class="pl-k">=</span><span class="pl-c1">5</span>)
+<span class="pl-c"># run the RFE algorithm</span>
+<span class="pl-smi">results</span> <span class="pl-k">&lt;-</span> rfe(<span class="pl-smi">wine</span>[,<span class="pl-c1">2</span><span class="pl-k">:</span><span class="pl-c1">12</span>], <span class="pl-smi">wine</span>[,<span class="pl-c1">13</span>], <span class="pl-v">sizes</span><span class="pl-k">=</span>c(<span class="pl-c1">2</span><span class="pl-k">:</span><span class="pl-c1">12</span>), <span class="pl-v">rfeControl</span><span class="pl-k">=</span><span class="pl-smi">control</span>)
+<span class="pl-c"># summarize the results</span>
+print(<span class="pl-smi">results</span>)
+<span class="pl-c"># list the chosen features</span>
+predictors(<span class="pl-smi">results</span>)
+<span class="pl-c"># plot the results</span>
+<span class="pl-smi">plot1</span> <span class="pl-k">&lt;-</span> plot(<span class="pl-smi">results</span>, <span class="pl-v">type</span><span class="pl-k">=</span>c(<span class="pl-s"><span class="pl-pds">"</span>g<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>o<span class="pl-pds">"</span></span>))
+<span class="pl-smi">plot2</span> <span class="pl-k">&lt;-</span> plot(<span class="pl-smi">results</span>, <span class="pl-v">type</span> <span class="pl-k">=</span> c(<span class="pl-s"><span class="pl-pds">"</span>g<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>o<span class="pl-pds">"</span></span>), <span class="pl-v">metric</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Rsquared<span class="pl-pds">"</span></span>)
+print(<span class="pl-smi">plot1</span>, <span class="pl-v">split</span><span class="pl-k">=</span>c(<span class="pl-c1">1</span>,<span class="pl-c1">1</span>,<span class="pl-c1">1</span>,<span class="pl-c1">2</span>), <span class="pl-v">more</span><span class="pl-k">=</span><span class="pl-c1">TRUE</span>)
+print(<span class="pl-smi">plot2</span>, <span class="pl-v">split</span><span class="pl-k">=</span>c(<span class="pl-c1">1</span>,<span class="pl-c1">2</span>,<span class="pl-c1">1</span>,<span class="pl-c1">2</span>))</pre></div>
+
+<ol>
+<li><p>Quality is converted from integer to factor. I also used 50mg/l to create a new variable "free.sulfur.dioxide.cat" as "noticeable" (free.sulfur.dioxide &gt; 50) and "not noticeable" (free.sulfur.dioxide &lt;= 50).</p></li>
+<li><p>Looking through the summary data above, residual.sugar, free.sulfur.dioxide, and total.sulfur.dioxide appear to have wide ranges. In particular, wines with residual sugar above 45 g/l are considered very sweet. However, I don't think the wide distribution should be adjusted as some wines may display very far-stretching characteristics. </p></li>
+</ol>
+
+<h1>
+<a id="ii---bivariate-plots-and-analysis" class="anchor" href="#ii---bivariate-plots-and-analysis" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>II - Bivariate Plots and Analysis</h1>
+
+<p>Below I used correlation matrix to visualize the pair-wise correlation between two variables. Quality and alcohol appear to have moderate positive correlation (0.44). In very contrast to the feature importance generated under RFE in Section I, volatile acidity and quality exhibit very weak negative relationship (corr = -0.19). Between free sulfur dioxide and quality, there is barely any correlation (corr = 0.02). It's possible that the relationship of two variables is masked in the presence of other factors. </p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">wine</span> <span class="pl-k">&lt;-</span> subset(<span class="pl-smi">wine</span>, <span class="pl-smi">quality</span> <span class="pl-k">&gt;</span> <span class="pl-c1">3</span> <span class="pl-k">&amp;</span> <span class="pl-smi">quality</span> <span class="pl-k">&lt;</span> <span class="pl-c1">9</span>)
+<span class="pl-smi">ctab</span> <span class="pl-k">&lt;-</span> cor(<span class="pl-smi">wine</span>[<span class="pl-c1">2</span><span class="pl-k">:</span><span class="pl-c1">13</span>])
+<span class="pl-smi">col</span> <span class="pl-k">&lt;-</span> colorRampPalette(c(<span class="pl-s"><span class="pl-pds">"</span>#7F0000<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>red<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>#FF7F00<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>yellow<span class="pl-pds">"</span></span>,
+                          <span class="pl-s"><span class="pl-pds">'</span>#9AD09A<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">"</span>cyan<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>#007FFF<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>#00007F<span class="pl-pds">"</span></span>))
+corrplot.mixed(<span class="pl-smi">ctab</span>, <span class="pl-v">col</span> <span class="pl-k">=</span> col(<span class="pl-c1">10</span>), <span class="pl-v">cl.cex</span> <span class="pl-k">=</span> <span class="pl-c1">0.6</span>,
+               <span class="pl-v">tl.col</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>black<span class="pl-pds">"</span></span>, <span class="pl-v">tl.srt</span> <span class="pl-k">=</span> <span class="pl-c1">180</span>,<span class="pl-v">tl.cex</span> <span class="pl-k">=</span> <span class="pl-c1">0.6</span>) </pre></div>
+
+<h2>
+<a id="main-features-of-interest" class="anchor" href="#main-features-of-interest" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Main Features of Interest</h2>
+
+<p>Interestingly, the relationship between alcohol and rating doesn't seems to be linearly positive. This leads me to think that there must be other factors that cause this parabola curve between alcohol and quanlity rating. Anyway, for good wines (quality rating above 5), the higher the alcohol level is, the better the rating is. For example, the median alcohol level among wines that are rated 8 is 12%, a quarter more than the 9.5% among wines that are rated 5.  </p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">p</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes(<span class="pl-smi">quality.cat</span>, <span class="pl-smi">alcohol</span>))
+<span class="pl-smi">p</span> <span class="pl-k">+</span>  geom_boxplot(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.2</span>, <span class="pl-v">col</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>navy blue<span class="pl-pds">'</span></span>)<span class="pl-k">+</span> geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.1</span>)
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol</span>,<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality.cat</span>)</pre></div>
+
+<p>Alcohol level reinforces acidity but the chart below shows a non-linear relationship between the two. This explains why in Section I we saw a small correlation at -0.19. I then divided alcohol level into five groups with equal intervals. The median of volatile acidity among wines with a high level of alcohol (13-14.2%) is 0.35, which is significantly higer than alcohol group between 10.5-11.7% (median = 0.24).</p>
+
+<div class="highlight highlight-source-r"><pre>ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">alcohol</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">volatile.acidity</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>, <span class="pl-v">size</span> <span class="pl-k">=</span> <span class="pl-c1">0.75</span>) <span class="pl-k">+</span> 
+  geom_smooth()
+
+<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.5</span> <span class="pl-k">&lt;-</span> cut(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol</span>, <span class="pl-c1">5</span>)
+summary(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.5</span>)
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">volatile.acidity</span>,<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.5</span>)</pre></div>
+
+<p>Free sulfur dioxide decreases when alcohol level rises. For example, among wines with alcohol level at 7.99-9.24%, the median value of free sulfur dioxide is 42 mg/l, 50% higher than the median free sulfur dioxide (28 mg/l) found in the alcohol group between 13-14.2%.</p>
+
+<div class="highlight highlight-source-r"><pre>ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">alcohol</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>, <span class="pl-v">size</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>) <span class="pl-k">+</span> 
+  coord_cartesian(<span class="pl-v">ylim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">100</span>)) <span class="pl-k">+</span> 
+  geom_smooth()
+
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span>,<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.5</span>)</pre></div>
+
+<p>Although the feature selection placed free sulfur dioxide and volatile acidity among the top three important features, charting against quality rating doesn't show strong relatinship, which could be masked by other factors.</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">p</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes(<span class="pl-smi">quality.cat</span>, <span class="pl-smi">volatile.acidity</span>)) <span class="pl-k">+</span> 
+     geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.1</span>) <span class="pl-k">+</span> 
+     geom_boxplot(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.1</span>, <span class="pl-v">color</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>orange<span class="pl-pds">'</span></span>)
+<span class="pl-smi">q</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes(<span class="pl-smi">quality.cat</span>, <span class="pl-smi">free.sulfur.dioxide</span>)) <span class="pl-k">+</span> 
+     geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.1</span>) <span class="pl-k">+</span> 
+     scale_y_continuous( <span class="pl-v">limit</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">150</span>)) <span class="pl-k">+</span> 
+     geom_boxplot(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.1</span>, <span class="pl-v">color</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>purple<span class="pl-pds">'</span></span>)
+
+grid.arrange(<span class="pl-smi">p</span>, <span class="pl-smi">q</span>, <span class="pl-v">ncol</span> <span class="pl-k">=</span> <span class="pl-c1">2</span>)</pre></div>
+
+<h2>
+<a id="other-interesting-features" class="anchor" href="#other-interesting-features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Other Interesting Features</h2>
+
+<p>Density depends on the percentage of alcohol in the water. The plot below clearly shows that the density decreases when the amount of alcohol increases. Additionally, density increases with sugar content. Residual sugar and alcohol explains more than 90% of the variance in density. So density shouldn't be included in the presence of alcohol or sugar in any modelling, just to minimize multicullinearity.</p>
+
+<div class="highlight highlight-source-r"><pre>ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">alcohol</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">density</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>, <span class="pl-v">size</span> <span class="pl-k">=</span> <span class="pl-c1">0.75</span>) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Alcohol vs. Density<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+  coord_cartesian(<span class="pl-v">ylim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0.98</span>, <span class="pl-c1">1.01</span>)) <span class="pl-k">+</span> 
+  geom_smooth(<span class="pl-v">method</span> <span class="pl-k">=</span> <span class="pl-smi">lm</span>)
+
+ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">residual.sugar</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">density</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>, <span class="pl-v">size</span> <span class="pl-k">=</span> <span class="pl-c1">0.75</span>) <span class="pl-k">+</span> 
+  coord_cartesian(<span class="pl-v">xlim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">25</span>), <span class="pl-v">ylim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0.98</span>, <span class="pl-c1">1.01</span>)) <span class="pl-k">+</span> 
+  geom_smooth()
+
+<span class="pl-smi">fit</span> <span class="pl-k">&lt;-</span> lm(<span class="pl-smi">density</span> <span class="pl-k">~</span> <span class="pl-smi">alcohol</span> <span class="pl-k">+</span> <span class="pl-smi">residual.sugar</span>, <span class="pl-v">data</span><span class="pl-k">=</span><span class="pl-smi">wine</span>)
+summary(<span class="pl-smi">fit</span>)</pre></div>
+
+<p>It's said that at free sulfur dioxide over 50mg/l, you can smell the odor of sulfur in wine. There is an infliction point when free sulfur dioxide reaches 50mg/l. The correlation between the two is 0.51 among wines with less than 50 mg/l of free sulfur dioxide but reduces to 0.19 among wines with higher free sulfur dioxide. </p>
+
+<div class="highlight highlight-source-r"><pre>ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">total.sulfur.dioxide</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_jitter(<span class="pl-v">alpha</span><span class="pl-k">=</span> <span class="pl-c1">0.3</span>, <span class="pl-v">size</span> <span class="pl-k">=</span> <span class="pl-c1">0.75</span>) <span class="pl-k">+</span> 
+  coord_cartesian(<span class="pl-v">xlim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">100</span>)) <span class="pl-k">+</span> 
+  geom_smooth()
+
+cor(<span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&lt;</span><span class="pl-k">=</span> <span class="pl-c1">50</span>,]<span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span>, <span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&lt;</span><span class="pl-k">=</span> <span class="pl-c1">50</span>,]<span class="pl-k">$</span><span class="pl-smi">total.sulfur.dioxide</span> )
+cor(<span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&gt;</span> <span class="pl-c1">50</span>,]<span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span>, <span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&gt;</span> <span class="pl-c1">50</span>,]<span class="pl-k">$</span><span class="pl-smi">total.sulfur.dioxide</span> )</pre></div>
+
+<h1>
+<a id="iii---multivariate-plots-and-analysis" class="anchor" href="#iii---multivariate-plots-and-analysis" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>III - Multivariate Plots and Analysis</h1>
+
+<p>Within the same quality group, a wine without noticeable sulfur smell is likely to have higher alcohol level. For example, among wines that are rated 6 and don't have noticeable sulfur smell, the median alcohol by volume is 10.6% as compared to 9.6% among wines with the same rating but noticeable sulfur smell. In other words, keeping alcohol constant, you will likely get a better rated wine if the sulfur level is unnoticeable. Also, for people who are concerned with the health issue caused by sulfur, choosing a wine with higher concentration of alcohol would likely reduce the intake of sulfur (well, if alcohol is less of concern to them). </p>
+
+<div class="highlight highlight-source-r"><pre>ggplot(<span class="pl-smi">wine</span>, aes(<span class="pl-smi">quality.cat</span>, <span class="pl-smi">alcohol</span>, <span class="pl-v">fill</span> <span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide.cat</span>)) <span class="pl-k">+</span>
+    geom_jitter(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.1</span>) <span class="pl-k">+</span> 
+    geom_boxplot() 
+
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol</span>, <span class="pl-k">list</span>(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide.cat</span>, <span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality.cat</span>))</pre></div>
+
+<p>When I break down quality by alcohol level and volatile acidity, for alcohol group between 7.99-10.1%, the negative relationship between volatile acidity and quality becomes the strongest. For example, among 7.99-10.1% alcohol categories, the median value of volatile acidity decreases from 0.34 g/l for less desirable wines (quality = 4) to 0.19 g/l for highly rated ones (quality = 8); the former group also has a higher variation of volatile acidity (sd = 0.31) than the latter one (sd = 0.03).</p>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.3</span> <span class="pl-k">&lt;-</span> cut(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol</span>, <span class="pl-c1">3</span>)
+summary(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.3</span>)
+ggplot( aes( <span class="pl-v">x</span><span class="pl-k">=</span> <span class="pl-smi">quality.cat</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">volatile.acidity</span>), <span class="pl-v">data</span> <span class="pl-k">=</span> <span class="pl-smi">wine</span>) <span class="pl-k">+</span> 
+  geom_boxplot() <span class="pl-k">+</span> 
+  coord_cartesian(<span class="pl-v">ylim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>, <span class="pl-c1">0.9</span>)) <span class="pl-k">+</span>
+  coord_flip() <span class="pl-k">+</span> 
+  facet_wrap(<span class="pl-k">~</span><span class="pl-smi">alcohol.level.3</span>)
+
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">volatile.acidity</span>, <span class="pl-k">list</span>(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.3</span>, <span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality.cat</span>))</pre></div>
+
+<p>If 50 mg/l makes the unpleasant smell noticeable by wines, the negative relationship between wine quality and total sulfur dioxide should be stronger among wines with free sulfur dioxide above 50 mg/l (negative correlation at -0.26) than those below 50 mg/l (negative correlation at -0.13), as the boxplot below shows. </p>
+
+<div class="highlight highlight-source-r"><pre>ggplot(<span class="pl-smi">wine</span>, aes( <span class="pl-v">x</span><span class="pl-k">=</span><span class="pl-smi">quality.cat</span>, <span class="pl-v">y</span><span class="pl-k">=</span><span class="pl-smi">total.sulfur.dioxide</span>)) <span class="pl-k">+</span> 
+  geom_boxplot() <span class="pl-k">+</span>
+  facet_grid(<span class="pl-k">~</span><span class="pl-smi">free.sulfur.dioxide.cat</span>) <span class="pl-k">+</span> 
+  geom_smooth(<span class="pl-v">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>lm<span class="pl-pds">"</span></span>, <span class="pl-v">se</span><span class="pl-k">=</span><span class="pl-c1">FALSE</span>, <span class="pl-v">color</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>red<span class="pl-pds">"</span></span>, aes(<span class="pl-v">group</span><span class="pl-k">=</span><span class="pl-c1">1</span>))
+
+cor(<span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&lt;</span><span class="pl-k">=</span> <span class="pl-c1">50</span>, ]<span class="pl-k">$</span><span class="pl-smi">quality</span>, <span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&lt;</span><span class="pl-k">=</span> <span class="pl-c1">50</span>, ]<span class="pl-k">$</span><span class="pl-smi">total.sulfur.dioxide</span> )
+cor(<span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&gt;</span> <span class="pl-c1">50</span>, ]<span class="pl-k">$</span><span class="pl-smi">quality</span>, <span class="pl-smi">wine</span>[<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span> <span class="pl-k">&gt;</span> <span class="pl-c1">50</span>, ]<span class="pl-k">$</span><span class="pl-smi">total.sulfur.dioxide</span> )</pre></div>
+
+<h1>
+<a id="iv---final-plots-and-summary" class="anchor" href="#iv---final-plots-and-summary" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>IV - Final Plots and Summary</h1>
+
+<h3>
+<a id="plot-one---quality-vs-alcohol" class="anchor" href="#plot-one---quality-vs-alcohol" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plot One - Quality vs. Alcohol</h3>
+
+<div class="highlight highlight-source-r"><pre>
+<span class="pl-smi">p1</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes( <span class="pl-smi">alcohol</span>)) <span class="pl-k">+</span>
+      geom_density(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>, <span class="pl-v">fill</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>red<span class="pl-pds">'</span></span>) <span class="pl-k">+</span>  
+      xlab(<span class="pl-s"><span class="pl-pds">'</span>Alcohol Level (% by Volume)<span class="pl-pds">'</span></span>) 
+
+<span class="pl-smi">p2</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes( <span class="pl-smi">quality.cat</span>)) <span class="pl-k">+</span> 
+      geom_bar(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.8</span>, <span class="pl-v">fill</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>#56B4E9<span class="pl-pds">"</span></span>) <span class="pl-k">+</span>  
+      xlab(<span class="pl-s"><span class="pl-pds">'</span>Wine Quality<span class="pl-pds">'</span></span>) 
+
+<span class="pl-smi">p3</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes( <span class="pl-v">x</span><span class="pl-k">=</span><span class="pl-smi">quality.cat</span>, <span class="pl-v">y</span><span class="pl-k">=</span><span class="pl-smi">alcohol</span>, <span class="pl-v">fill</span> <span class="pl-k">=</span> <span class="pl-smi">quality.cat</span>)) <span class="pl-k">+</span> 
+  scale_fill_brewer() <span class="pl-k">+</span> 
+  geom_boxplot() <span class="pl-k">+</span>
+  geom_smooth(<span class="pl-v">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>lm<span class="pl-pds">"</span></span>, <span class="pl-v">se</span><span class="pl-k">=</span><span class="pl-c1">FALSE</span>, <span class="pl-v">color</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>red<span class="pl-pds">"</span></span>, aes(<span class="pl-v">group</span><span class="pl-k">=</span><span class="pl-c1">1</span>)) <span class="pl-k">+</span> 
+  theme(<span class="pl-v">legend.position</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>top<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+  ggtitle(<span class="pl-s"><span class="pl-pds">'</span>Wine Quality vs. Alcohol Level<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+  xlab(<span class="pl-s"><span class="pl-pds">'</span>Wine Quality<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+  ylab(<span class="pl-s"><span class="pl-pds">'</span>Alcohol Level (% by Volume)<span class="pl-pds">'</span></span>) 
+
+grid.arrange(<span class="pl-smi">p3</span>, arrangeGrob(<span class="pl-smi">p1</span>, <span class="pl-smi">p2</span>, <span class="pl-v">ncol</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>), <span class="pl-v">ncol</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">widths</span><span class="pl-k">=</span>c(<span class="pl-c1">2</span>,<span class="pl-c1">1</span>))
+
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol</span>,<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality.cat</span>)</pre></div>
+
+<h3>
+<a id="description-one" class="anchor" href="#description-one" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Description One</h3>
+
+<p>The reason why I chose this graph as one of the final plots is because among all the features, alcohol level shows the strongest correlation (corr = 0.44) with wine rating. Alcohol level has a relatively small range from 8% to 14.2% and a median value at 10.4%. The majority of our wine ratings fall between 5-7. Except for rating 4 category probably due to relative small sample size, a better-rated wine has a higher alcohol level (the left chart). For example, the median alcohol level among wines that are rated 8 on a scale of 0-10 is 12%, much higher than 9.5% among wines rated 5.</p>
+
+<h3>
+<a id="plot-two---quality-vs-alcohol-and-free-sulfur-dioxide" class="anchor" href="#plot-two---quality-vs-alcohol-and-free-sulfur-dioxide" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plot Two - Quality vs. Alcohol and Free Sulfur Dioxide</h3>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-c">#placeholder plot - prints nothing at all</span>
+<span class="pl-smi">empty</span> <span class="pl-k">&lt;-</span> ggplot()<span class="pl-k">+</span>geom_point(aes(<span class="pl-c1">1</span>,<span class="pl-c1">1</span>), <span class="pl-v">colour</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>white<span class="pl-pds">"</span></span>) <span class="pl-k">+</span>
+     theme(                              
+       <span class="pl-v">plot.background</span> <span class="pl-k">=</span> element_blank(), 
+       <span class="pl-v">panel.grid.major</span> <span class="pl-k">=</span> element_blank(), 
+       <span class="pl-v">panel.grid.minor</span> <span class="pl-k">=</span> element_blank(), 
+       <span class="pl-v">panel.border</span> <span class="pl-k">=</span> element_blank(), 
+       <span class="pl-v">panel.background</span> <span class="pl-k">=</span> element_blank(),
+       <span class="pl-v">axis.title.x</span> <span class="pl-k">=</span> element_blank(),
+       <span class="pl-v">axis.title.y</span> <span class="pl-k">=</span> element_blank(),
+       <span class="pl-v">axis.text.x</span> <span class="pl-k">=</span> element_blank(),
+       <span class="pl-v">axis.text.y</span> <span class="pl-k">=</span> element_blank(),
+       <span class="pl-v">axis.ticks</span> <span class="pl-k">=</span> element_blank()
+     )
+<span class="pl-c">#boxplot</span>
+<span class="pl-smi">boxplot</span><span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>,aes(<span class="pl-smi">quality.cat</span>, <span class="pl-smi">alcohol</span>)) <span class="pl-k">+</span> 
+  geom_boxplot(aes(<span class="pl-v">fill</span><span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide.cat</span>), <span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.5</span>) <span class="pl-k">+</span> 
+  theme(<span class="pl-v">legend.position</span><span class="pl-k">=</span>c(<span class="pl-c1">1</span>,<span class="pl-c1">1</span>),<span class="pl-v">legend.justification</span><span class="pl-k">=</span>c(<span class="pl-c1">1</span>,<span class="pl-c1">1</span>)) <span class="pl-k">+</span> 
+  xlab(<span class="pl-s"><span class="pl-pds">'</span>Wine Quality<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+  ylab(<span class="pl-s"><span class="pl-pds">'</span>Alcohol (% by volume)<span class="pl-pds">'</span></span>)
+
+<span class="pl-c">#marginal density of quality plot on top</span>
+<span class="pl-c">#used quality instead of quality.cat</span>
+<span class="pl-smi">plot_top</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes(<span class="pl-smi">quality</span>, <span class="pl-v">fill</span><span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide.cat</span>)) <span class="pl-k">+</span> 
+  geom_density(<span class="pl-v">alpha</span><span class="pl-k">=</span>.<span class="pl-c1">5</span>) <span class="pl-k">+</span> 
+  theme(<span class="pl-v">legend.position</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>none<span class="pl-pds">"</span></span>) <span class="pl-k">+</span> 
+  xlab(<span class="pl-s"><span class="pl-pds">'</span>Wine Quality<span class="pl-pds">'</span></span>)
+
+<span class="pl-c">#marginal density of  alcohol plot on the right</span>
+<span class="pl-smi">plot_right</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes(<span class="pl-smi">alcohol</span>, <span class="pl-v">fill</span><span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide.cat</span>)) <span class="pl-k">+</span> 
+  geom_density(<span class="pl-v">alpha</span><span class="pl-k">=</span>.<span class="pl-c1">5</span>) <span class="pl-k">+</span> 
+  coord_flip() <span class="pl-k">+</span>  
+  theme(<span class="pl-v">legend.position</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>none<span class="pl-pds">"</span></span>) <span class="pl-k">+</span> 
+  xlab(<span class="pl-s"><span class="pl-pds">'</span>Alcohol (% by volume)<span class="pl-pds">'</span></span>)
+
+<span class="pl-c">#arrange the plots together, with appropriate height and width for each row and column</span>
+grid.arrange(<span class="pl-smi">plot_top</span>, <span class="pl-smi">empty</span>, <span class="pl-smi">boxplot</span>, <span class="pl-smi">plot_right</span>, 
+             <span class="pl-v">ncol</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">nrow</span><span class="pl-k">=</span><span class="pl-c1">2</span>,
+             <span class="pl-v">widths</span><span class="pl-k">=</span>c(<span class="pl-c1">4</span>, <span class="pl-c1">1</span>), <span class="pl-v">heights</span><span class="pl-k">=</span>c(<span class="pl-c1">1</span>, <span class="pl-c1">4</span>), 
+             <span class="pl-v">main</span><span class="pl-k">=</span>(<span class="pl-s"><span class="pl-pds">'</span>Wine Quality vs. Alcohol and Free Sulfur Dioxide Level<span class="pl-pds">'</span></span>))
+
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol</span>, <span class="pl-k">list</span>(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide.cat</span>, <span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">quality.cat</span>))</pre></div>
+
+<h3>
+<a id="description-two" class="anchor" href="#description-two" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Description Two</h3>
+
+<p>Free sulfur dioxide and alcohol are among the top three most important features (See Section 1 recursive feature elimination). Something about the odor makes things interesting. Following this <a href="http://www.r-bloggers.com/ggplot2-cheatsheet-for-visualizing-distributions/">great visualization example</a>, I was able to combine three graphs to one in a different way from the first plot. Charts on the top and right side show the distribution of quality ratings and alcohol level, respectively, by whether the free sulfur dioxide is noticeable or not. As you can see, most wines cluster between 5-7 (okay wines) but wines with no noticeable free sulfur dioxide have slightly higher ratings between 6-7 and those with free sulfur dioxide above 50 mg/l have lower alcohol concentration. This pattern holds true no matter what quality rating is (middle graph). Holding wine quality consistent, for example, within wines that are rated 6, the median alcohol level (10.6%) is higher among those with no noticeable smell of sulfur than those otherwise (9.6%). For people who don't like the sulfur smell and are worried about its health concern, one rule of thumb is perhaps to choose wines with higher alcohol level. </p>
+
+<h3>
+<a id="plot-three----free-sulfur-dioxide--volatile-acidity-vs-alcohol" class="anchor" href="#plot-three----free-sulfur-dioxide--volatile-acidity-vs-alcohol" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plot Three -  Free Sulfur Dioxide &amp; Volatile Acidity vs. Alcohol</h3>
+
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">p1</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes( <span class="pl-v">x</span> <span class="pl-k">=</span> <span class="pl-smi">alcohol.level.5</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">free.sulfur.dioxide</span>)) <span class="pl-k">+</span> 
+      geom_point(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.05</span>) <span class="pl-k">+</span>
+      coord_cartesian( <span class="pl-v">ylim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>,<span class="pl-c1">75</span>)) <span class="pl-k">+</span> 
+      geom_boxplot(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.3</span>, <span class="pl-v">color</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>orange<span class="pl-pds">'</span></span>) <span class="pl-k">+</span>
+      ylab(<span class="pl-s"><span class="pl-pds">'</span>Free Sulfur Dioxide(mg/l)<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+      xlab(<span class="pl-s"><span class="pl-pds">'</span>Alcohol Groups (% by volume)<span class="pl-pds">'</span></span>)
+
+<span class="pl-smi">p2</span> <span class="pl-k">&lt;-</span> ggplot(<span class="pl-smi">wine</span>, aes( <span class="pl-v">x</span> <span class="pl-k">=</span> <span class="pl-smi">alcohol.level.5</span>, <span class="pl-v">y</span> <span class="pl-k">=</span> <span class="pl-smi">volatile.acidity</span>)) <span class="pl-k">+</span> 
+      geom_point(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.05</span>) <span class="pl-k">+</span>
+      coord_cartesian( <span class="pl-v">ylim</span> <span class="pl-k">=</span> c(<span class="pl-c1">0</span>,<span class="pl-c1">0.6</span>)) <span class="pl-k">+</span> 
+      geom_boxplot(<span class="pl-v">alpha</span> <span class="pl-k">=</span> <span class="pl-c1">0.3</span>, , <span class="pl-v">color</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>purple<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+      ylab(<span class="pl-s"><span class="pl-pds">'</span>Volatile Acidity(g/l)<span class="pl-pds">'</span></span>) <span class="pl-k">+</span> 
+      xlab(<span class="pl-s"><span class="pl-pds">'</span>Alcohol Groups (% by volume)<span class="pl-pds">'</span></span>)
+
+grid.arrange(<span class="pl-smi">p1</span>, <span class="pl-smi">p2</span>, <span class="pl-v">ncol</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>, <span class="pl-v">main</span> <span class="pl-k">=</span> (<span class="pl-s"><span class="pl-pds">"</span>Free Sulfur Dioxide and Volatile Acidity vs. Alcohol Groups<span class="pl-pds">"</span></span>))
+
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">free.sulfur.dioxide</span>,<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.5</span>)
+describeBy(<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">volatile.acidity</span>,<span class="pl-smi">wine</span><span class="pl-k">$</span><span class="pl-smi">alcohol.level.5</span>)
+</pre></div>
+
+<h3>
+<a id="description-three" class="anchor" href="#description-three" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Description Three</h3>
+
+<p>Alcohol, free sulfur dioxide and volatile acidity became main features of interest from Section I and I think it's important to understand how they interact with each other. Alcohol level appears to be an interesting element because it is not only correlated with wine ratings but also in some way it can <a href="http://www.bjcp.org/mead/Factors_Wine_Eval.pdf">enhance acidity and mask unpleasant odor</a>. The combined two charts below plot alcohol against free sulfur dioxide and volatile acidity. The higher the alcohol level is, the less the free sulfur dioxide will be. For example, the median free sulfur dioxide amount among 13-14.2% alcohol group is only 28 mg/l, much less than 42 mg/l among 7.99-9.24% alcohol group. The relatinship between acidity and alcohol becomes more clear among higher alcohol groups. For instance, the median volatile acidity amount among 13-14.2% alcohol group is 0.35 g/l as compared to 0.24 g/l among 10.5-11.7% alcohol group. </p>
+
+<h1>
+<a id="v---reflection" class="anchor" href="#v---reflection" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>V - Reflection</h1>
+
+<p>My learnings after exploring the white wine dataset:</p>
+
+<ol>
+<li><p>Alcohol is an important factor for the wine taste. At the same times, it interacts with other physcochemicals. For example, it can suppress the unpleasant odor and enhance acidity. </p></li>
+<li><p>Free sulfur dioxide is really critical. At the level of 50m g/l, it becomes excessive and makes unpleasant smell noticeable that hurts the taste bud. </p></li>
+</ol>
+
+<p>This white wine dataset is the most tidy one I've ever used for Udacity projects. However, I was frustrated in the beginning because except alcohol, almost all other input variables don't have a strong relationship with wine quality. Reading correlation matrix is not enough. When conditioning on other relevant variables, the relationships between the physicochemical properties and quality became clear. Also, all input variables are continous variables which limited the type of graphs I could make. One solution I made was to recode to categorical variables. </p>
+
+<p>The other problem I had is my knowledge about the physicochemicals and how they interacted were limited before starting this project. I had to resort to additional readings to brush up my wine knowledge.  </p>
+
+<p>This dataset is pretty limited with 13 input variables (technically 12 can be used for analysis because one of them is ID variable), it will be great if other variables such as grape type and wine age can be included for further investigation. </p>
+        </section>
+
+        <footer>
+          White Wine Analysis with R is maintained by <a href="https://github.com/LiChangNY">LiChangNY</a><br>
+          This page was generated by <a href="https://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
+    </div>
+  </body>
+</html>
